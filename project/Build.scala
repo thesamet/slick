@@ -52,8 +52,15 @@ object SlickBuild extends Build {
     organizationName := "Typesafe",
     organization := "com.typesafe.slick",
     resolvers += Resolver.sonatypeRepo("snapshots"),
+    addCompilerPlugin("org.scala-lang.plugins" % "macro-paradise" % "2.0.0-SNAPSHOT" cross CrossVersion.full),
     scalacOptions ++= List("-deprecation", "-feature"),
     libraryDependencies += "org.slf4j" % "slf4j-api" % "1.6.4",
+    libraryDependencies ++= List(
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "org.scalariform" %% "scalariform" % "0.1.4"
+    ),
+    traceLevel := 0,
     logBuffered := false,
     repoKind <<= (version)(v => if(v.trim.endsWith("SNAPSHOT")) "snapshots" else "releases"),
     //publishTo <<= (repoKind)(r => Some(Resolver.file("test", file("c:/temp/repo/"+r)))),
@@ -110,7 +117,7 @@ object SlickBuild extends Build {
       mappings in (Compile, packageBin) <++= mappings in (config("macro"), packageBin)
     ) ++ ifPublished(Seq(
       libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-compiler" % _ % "macro")
-    )))
+    ))).dependsOn(ProjectRef( file("../sprinter"), "sprinter" ))
   lazy val slickTestkitProject = Project(id = "testkit", base = file("slick-testkit"),
     settings = Project.defaultSettings ++ typeProvidersSettings ++ sharedSettings ++ extTarget("testkit", None) ++ Seq(
       name := "Slick-TestKit",
