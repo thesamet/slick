@@ -1,8 +1,10 @@
 package scala.slick.meta.codegen
 
 import scala.slick.{meta => m}
-import scala.slick.lifted.ForeignKeyAction
+import scala.slick.meta.ForeignKeyAction
+import scala.slick.ast.ColumnOption
 import scala.reflect.runtime.universe._
+import scala.slick.SlickException
 
 /**
  * Basis for a code generator generating Scala trees.
@@ -16,7 +18,7 @@ abstract class AbstractTreeGenerator(model: m.Model)
 
   /** Generates a sequence of all code fragments */
   def codeTrees : Seq[Tree] = Seq(
-    q"import scala.slick.lifted.ForeignKeyAction"
+    q"import scala.slick.meta.ForeignKeyAction"
   ) ++ tables.flatMap(_.code)
 
   // Code generators for the different meta model entities
@@ -68,19 +70,31 @@ class ${newTypeName(tableClassName)}(tag: Tag) extends Table[$tpe](tag, ${meta.n
 
     // generator classes
     class ColumnDef(meta: m.Column) extends super.ColumnDef(meta){
-      final def primaryKeyColumnOption = q"O.PrimaryKey"
-      final def dbTypeColumnOption = q"O.DBType(${dbTypeWithSize})"
-      final def autoIncrementColumnOption = q"O.AutoInc"
-      final def defaultValueColumnOption = default.map(d => q"O.Default(${d})")
-      
-      def default : Option[Tree] = {
-        meta.default.collect{
-          case Some(v:String) => q"$v"
-          case Some(v:Int)    => q"$v"
-          case Some(v:Double)  => q"$v"
-          case None => q"""${newTermName("None")}"""
+      def options: Iterable[Tree] = {
+        import ColumnOption._
+        meta.options.map{
+          case PrimaryKey     => q"O.PrimaryKey"
+          case Default(value) => q"O.Default(${default.get})" // .get is safe here
+          case DBType(dbType) => q"O.DBType($dbType)"
+          case AutoInc        => q"O.AutoInc"
+          case NotNull|Nullable => throw new SlickException( s"[Code generation] Please don't use Nullable or NotNull column options. Use an Option type, respectively the nullable flag in Slick's meta model Column." )
+          case o => throw new SlickException( s"[Code generation] Don't know how to render unexpected ColumnOption $o." )
         }
       }
+
+      /** Generates literal represenation of the default value */
+      final def default: Option[Tree] = meta.options.collect{
+        case ColumnOption.Default(value) =>
+          val raw = value match {
+            case s:String => q"$s"
+            case None     => q"None"
+            case v:Int    => q"$v"
+            case v:Double => q"$v"
+            case _ => throw new SlickException( s"[Code generation] Dont' know how to render default value $value of ${value.getClass}" )
+          }
+          if(meta.nullable && raw != q"None") q"Some($raw)"
+          else raw
+      }.headOption
       
       def code = q"val ${newTermName(name)} = column[${tpe}](${meta.name},..$options)"
     }
