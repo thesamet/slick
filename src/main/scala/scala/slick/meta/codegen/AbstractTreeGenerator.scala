@@ -100,7 +100,7 @@ class ${newTypeName(tableClassName)}(tag: Tag) extends Table[$tpe](tag, ${meta.n
     }
 
     class PrimaryKeyDef(meta: m.PrimaryKey) extends super.PrimaryKeyDef(meta){
-      def code = q"""val ${newTermName(name)} = primaryKey(${meta.name}, ${compound(columns.map(_.name).map(newTermName).map(c=>q"$c"))})"""
+      def code = q"""val ${newTermName(name)} = primaryKey(${dbName}, ${compound(columns.map(_.name).map(newTermName).map(c=>q"$c"))})"""
     }
 
     class ForeignKeyDef(meta: m.ForeignKey) extends super.ForeignKeyDef(meta){
@@ -114,11 +114,11 @@ class ${newTypeName(tableClassName)}(tag: Tag) extends Table[$tpe](tag, ${meta.n
       
       final def onUpdate: Tree = ruleString(meta.onUpdate)
       final def onDelete: Tree = ruleString(meta.onDelete)
-      def code = q"""val ${newTermName(name)} = foreignKey(${meta.name}, ${compound(referencingColumns.map(_.name).map(newTermName).map(c=>q"$c"))}, ${newTermName(referencedTable.tableValueName)})(t => ${compound(referencedColumns.map(_.name).map(c => q"t.${newTermName(c)}"))}, onUpdate=${onUpdate}, onDelete=${onDelete})"""
+      def code = q"""val ${newTermName(name)} = foreignKey(${dbName}, ${compound(referencingColumns.map(_.name).map(newTermName).map(c=>q"$c"))}, ${newTermName(referencedTable.tableValueName)})(t => ${compound(referencedColumns.map(_.name).map(c => q"t.${newTermName(c)}"))}, onUpdate=${onUpdate}, onDelete=${onDelete})"""
     }
 
     class IndexDef(meta: m.Index) extends super.IndexDef(meta){
-      def code = q"""val ${newTermName(name)} = index(${meta.name}, ${compound(columns.map(_.name).map(newTermName).map(c=>q"$c"))}, unique=${meta.unique})"""
+      def code = q"""val ${newTermName(name)} = index(${dbName}, ${compound(columns.map(_.name).map(newTermName).map(c=>q"$c"))}, unique=${meta.unique})"""
     }
   }
   // Default source code string generators
