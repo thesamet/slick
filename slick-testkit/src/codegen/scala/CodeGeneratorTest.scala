@@ -145,7 +145,7 @@ class Tables(val profile: JdbcProfile){
   case class Category(id: Int, name: String)
   class Categories(tag: Tag) extends Table[Category](tag, "categories") {
     def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
-    def name = column[String]("name")
+    def name = column[String]("name") 
     def * = (id, name) <> (Category.tupled,Category.unapply)
     def idx = index("IDX_NAME",name)
   }
@@ -184,7 +184,7 @@ class Tables(val profile: JdbcProfile){
   // testing table larger 22 columns (code gen round trip does not preserve structure of the * projection or names of mapped to classes)
   case class Part(i1: Int, i2: Int, i3: Int, i4: Int, i5: Int, i6: Int)
   case class Whole(id: Int, p1: Part, p2: Part, p3: Part, p4: Part)
-  class Large(tag: Tag) extends Table[Whole](tag, "LARGE") {
+  class Large(tag: Tag) extends Table[Whole](tag, "large") {
     def id = column[Int]("id", O.PrimaryKey)
     def p1i1 = column[Int]("p1i1")
     def p1i2 = column[Int]("p1i2")
