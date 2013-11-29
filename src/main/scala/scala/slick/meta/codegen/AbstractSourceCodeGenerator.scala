@@ -18,6 +18,11 @@ abstract class AbstractSourceCodeGenerator(model: m.Model)
   def code = {
     "import scala.slick.meta.ForeignKeyAction" +
       "\n" +
+      ( if(tables.exists(_.meta.columns.size > 22)){
+          "import scala.slick.collection.heterogenous._\n"+
+          "import scala.slick.collection.heterogenous.syntax._\n"
+        } else ""
+      ) +
       tables.map(_.code.mkString("\n")).mkString("\n\n")
   }
 
@@ -126,6 +131,10 @@ class ${tableClassName}(tag: Tag) extends Table[${tpe}](tag,"${meta.name.table}"
 trait StringGeneratorHelpers extends scala.slick.meta.codegen.GeneratorHelpers[String]{
   def docWithCode(comment: Option[String], code:String): String = comment.map("/** "+_+" */") ++ Seq(code) mkString "\n"
   def toOption(t: String) = s"Option[$t]"
-  def compound(valuesOrTypes: Seq[String]): String = if (valuesOrTypes.size == 1) valuesOrTypes.head else valuesOrTypes.mkString("(",", ",")")
+  def compound(valuesOrTypes: Seq[String]): String = {
+    if (valuesOrTypes.size == 1) valuesOrTypes.head
+    else if(valuesOrTypes.size <= 22) valuesOrTypes.mkString("(",", ",")")
+    else valuesOrTypes.mkString(" :: ") + " :: HNil"
+  }
   def mapJdbcType(jdbcType: Int): String = mapJdbcTypeString(jdbcType)
 }
