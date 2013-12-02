@@ -36,11 +36,11 @@ class CodeGenRoundTripTest extends TestkitTest[JdbcTestDB] {
 
     // FIXME: don't handle driver explicitly here
     if(tdb.profile == slick.driver.MySQLDriver){
-      assertEquals( PostsRow(2,"post 2",Some(1)), sql"""select * from `posts` where `id` = 2""".as[PostsRow].first )
-      assertEquals( PostsRow(2,"post 2",Some(1)), sql"""select * from `posts` where `id` = 2""".as(GetPosts).first )
+      assertEquals( PostsRow(2,"post 2",Some(1)), sql"""select * from `POSTS` where `id` = 2""".as[PostsRow].first )
+      assertEquals( PostsRow(2,"post 2",Some(1)), sql"""select * from `POSTS` where `id` = 2""".as(GetPosts).first )
     } else {
-      assertEquals( PostsRow(2,"post 2",Some(1)), sql"""select * from "posts" where "id" = 2""".as[PostsRow].first )
-      assertEquals( PostsRow(2,"post 2",Some(1)), sql"""select * from "posts" where "id" = 2""".as(GetPosts).first )
+      assertEquals( PostsRow(2,"post 2",Some(1)), sql"""select * from "POSTS" where "id" = 2""".as[PostsRow].first )
+      assertEquals( PostsRow(2,"post 2",Some(1)), sql"""select * from "POSTS" where "id" = 2""".as(GetPosts).first )
     }
 
     assertEquals((3,List("post 2","post 3")), res)
@@ -55,9 +55,9 @@ class CodeGenRoundTripTest extends TestkitTest[JdbcTestDB] {
     assertEquals((oData,0), Large.map(r => (r,r.id)).first)
     // FIXME: don't handle driver explicitly here
     if(tdb.profile == slick.driver.MySQLDriver){
-      assertEquals(oData, sql"""select * from `large` """.as(GetLarge).first )      
+      assertEquals(oData, sql"""select * from `LARGE` """.as(GetLarge).first )      
     } else {
-      assertEquals(oData, sql"""select * from "large" """.as(GetLarge).first )
+      assertEquals(oData, sql"""select * from "LARGE" """.as(GetLarge).first )
     }
   }
 }
