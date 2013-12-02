@@ -44,9 +44,14 @@ abstract class AbstractSourceCodeGenerator(model: m.Model)
     def Index     : m.Index      => Index
 
     def star = "def * = " + compound(columns.map(_.name)) + (if(mappingEnabled) s" <> (${factory}, ${extractor})" else "") // TODO: encode this check in the parent class
+    def option = "def ? = " + compound(columns.map(c => c.name+(if(c.meta.nullable)"" else ".?"))) + (if(mappingEnabled) s""".shaped.<>(${optionFactory}, (_:Any) => ???)""" /*(_ => throw new Exception("Inserting into ? projection not supported.")) : $mappedType => )) """*/ else "")
     
     def mappedType        = entityClassName
     def factory: String   = mappedType+".tupled"
+    def optionFactory: String = {
+      val discr = columns.find(c => !c.meta.nullable).get.name
+      "{case "+ compound(columns.map(c => c.name/*+": "+toOption(c.rawType)*/)) + " => " + discr +".map(_ =>" + factory + "(" + compound(columns.map(c => c.name+(if(c.meta.nullable)"" else ".get"))) + "))}"
+    }
     def extractor: String = mappedType+".unapply"
     
     def entityClassCode = s"""case class ${entityClassName}(${columns.map(c=>c.name+": "+c.tpe+(c.default.map("="+_).getOrElse(""))).mkString(", ")})"""

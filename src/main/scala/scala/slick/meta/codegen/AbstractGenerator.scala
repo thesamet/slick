@@ -95,6 +95,10 @@ abstract class AbstractGenerator[Code](model: m.Model)
     // * projection and types
     /** The * projection that accumulates all columns and map them if mappingEnabled is true*/
     def star: Code
+    /** Indicates weather a ? projection should be generated. */
+    def optionEnabled: Boolean = mappingEnabled && columns.exists(c => !c.meta.nullable)
+    /** The ? projection to produce an Option row. Useful for outer joins. */
+    def option: Code
     /** Type of the * projection in case it mappingEnabled is false. */
     def types: Code = compound(columns.map(_.tpe))
     /** The type of the elements this table yields. */
@@ -107,6 +111,8 @@ abstract class AbstractGenerator[Code](model: m.Model)
     def mappedType: Code
     /** Function that constructs an entity object from the unmapped values */
     def factory: Code
+    /** Function that constructs an Option of an entity object from the unmapped Option values */
+    def optionFactory: Code
     /** Function that extracts the unmapped values from an entity object */
     def extractor: Code
 
@@ -138,8 +144,8 @@ abstract class AbstractGenerator[Code](model: m.Model)
     /** Generates the Table class code. */
     def tableClassCode: Code
     /** Generates the body of the Table class as individual statements grouped into logical groups. */
-    final def tableClassBody: Seq[Seq[Code]] = Seq(
-      Seq(star),
+    def tableClassBody: Seq[Seq[Code]] = Seq(
+      Seq(star) ++ (if(optionEnabled) Seq(option) else Seq()),
       columns    .map(x => docWithCode(x.doc,x.code)),
       // H2 apparently needs primary key and autoinc to be specified together, so we place single primary keys as column options
       primaryKey.map(x => docWithCode(x.doc,x.code)).toSeq,
