@@ -1,7 +1,7 @@
 package scala.slick
 package object util{
   /** Slick String extension methods */
-  implicit class StringExtensionMethods(val str: String) extends AnyVal{
+  implicit class StringExtensions(val str: String) extends AnyVal{
     /** Lowercases the first character */
     final def uncapitalize: String = str(0).toString.toLowerCase + str.tail
 

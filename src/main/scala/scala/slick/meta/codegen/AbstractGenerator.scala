@@ -2,7 +2,7 @@ package scala.slick.meta.codegen
 
 import scala.slick.{meta => m}
 import scala.slick.lifted.ForeignKeyAction
-import scala.slick.util.StringExtensionMethods
+import scala.slick.util.StringExtensions
 import scala.slick.ast.ColumnOption
 
 /**
@@ -41,8 +41,7 @@ abstract class AbstractGenerator[Code](model: m.Model)
    * @param meta Jdbc meta data
   */
   abstract case class TableDef(val meta: m.Table){
-    table =>
-
+    _table =>
     // virtual class pattern
     /** Column code generator */
     type Column     <: ColumnDef
@@ -167,6 +166,8 @@ abstract class AbstractGenerator[Code](model: m.Model)
      * @param meta Jdbc meta data
      */
     abstract case class ColumnDef(val meta: m.Column){
+      /** Table code generator */
+      final lazy val table = _table
       /**
        * Underlying Scala type of this column.
        * Override this to just affect the data type but preserve potential Option-wrapping.
@@ -196,8 +197,10 @@ abstract class AbstractGenerator[Code](model: m.Model)
      * @param meta Jdbc meta data
      */
     abstract case class PrimaryKeyDef(val meta: m.PrimaryKey){
+      /** Table code generator */
+      final lazy val table = _table
       /** Columns code generators in correct order */
-      final lazy val columns: Seq[Column] = meta.columns.map(_.name).map(table.columnsByName)
+      final lazy val columns: Seq[Column] = meta.columns.map(_.name).map(columnsByName)
       /** Name used in the db or a default */
       lazy val dbName = meta.name.getOrElse("PRIMARY_KEY_"+freshInteger)
       /** Name for the primary key definition used in Scala code */
@@ -213,6 +216,8 @@ abstract class AbstractGenerator[Code](model: m.Model)
      * @param meta Jdbc meta data
      */
     abstract case class ForeignKeyDef(val meta: m.ForeignKey){
+      /** Referencing Table code generator */
+      final lazy val referencingTable = _table
       /** Referencing columns code generators */
       final lazy val referencingColumns: Seq[Column] = meta.referencingColumns.map(_.name).map(columnsByName)
       /** Referenced Table code generator */
@@ -230,9 +235,9 @@ abstract class AbstractGenerator[Code](model: m.Model)
         val preferredName = referencedTable.tableValueName.uncapitalize
         if(
           // multiple foreign keys to the same table
-          table.foreignKeys.exists(_.referencedTable == referencedTable)
+          foreignKeys.exists(_.referencedTable == referencedTable)
           // column name conflicts with referenced table name
-          || table.columns.exists(_.name == preferredName)
+          || columns.exists(_.name == preferredName)
         )
           dbName.toCamelCase.uncapitalize
         else
@@ -249,8 +254,10 @@ abstract class AbstractGenerator[Code](model: m.Model)
      * @param meta Jdbc meta data
      */
     abstract case class IndexDef(val meta: m.Index){
+      /** Table code generator */
+      final lazy val table = _table
       /** Columns code generators */
-      final lazy val columns: Seq[Column] = meta.columns.map(_.name).map(table.columnsByName)
+      final lazy val columns: Seq[Column] = meta.columns.map(_.name).map(columnsByName)
       /** Name used in the db or a default */
       lazy val dbName = meta.name.getOrElse("INDEX_"+freshInteger)
       /** The name used in Scala code */
