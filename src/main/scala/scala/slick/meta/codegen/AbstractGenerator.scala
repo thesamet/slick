@@ -290,22 +290,31 @@ trait GeneratorHelpers[Code]{
   /** Converts from java.sql.Types to the corresponding Java class name (with fully qualified path). */
   def mapJdbcTypeString(jdbcType: Int): String = {
     import java.sql.Types._
+    // see TABLE B-1 of JSR-000221 JBDCTM API Specification 4.1 Maintenance Release
+    // Mapping to corresponding Scala types where applicable
     jdbcType match {
+      case CHAR | VARCHAR | LONGVARCHAR | NCHAR | NVARCHAR | LONGNVARCHAR => "String"
+      case NUMERIC | DECIMAL => "BigDecimal"
       case BIT | BOOLEAN => "Boolean"
       case TINYINT => "Byte"
       case SMALLINT => "Short"
       case INTEGER => "Int"
-      case BIGINT => "Long" //"java.math.BigInteger"
-      case FLOAT => "Float"
-      case REAL | DOUBLE => "Double"
-      case NUMERIC | DECIMAL => "java.math.BigDecimal"
-      case CHAR | VARCHAR | LONGVARCHAR => "String"
+      case BIGINT => "Long"
+      case REAL => "Float"
+      case FLOAT | DOUBLE => "Double"
+      case BINARY | VARBINARY | LONGVARBINARY | BLOB => "java.sql.Blob"
       case DATE => "java.sql.Date"
       case TIME => "java.sql.Time"
       case TIMESTAMP => "java.sql.Timestamp"
-      case BINARY | VARBINARY | LONGVARBINARY | BLOB => "java.sql.Blob"
-      case NULL => "Null"
       case CLOB => "java.sql.Clob"
+      // case ARRAY => "java.sql.Array"
+      // case STRUCT => "java.sql.Struct"
+      // case REF => "java.sql.Ref"
+      // case DATALINK => "java.net.URL"
+      // case ROWID => "java.sql.RowId"
+      // case NCLOB => "java.sql.NClob"
+      // case SQLXML => "java.sql.SQLXML"
+      case NULL => "Null"
       case _ => "AnyRef"
     }
   }
