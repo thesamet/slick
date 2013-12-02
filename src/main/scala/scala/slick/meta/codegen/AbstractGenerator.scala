@@ -121,10 +121,8 @@ abstract class AbstractGenerator[Code](model: m.Model)
     def entityClassCode: Code
 
     // GetResult mapper to use with plain SQL
-    /** Plain SQL helper code is only generated for tables where the types of all columns appear in this least */
-    def plainSQLSupportedTypes: Set[Code]
     /** Indicates if an implicit GetResult mapper should be generated for this table. */
-    def plainSQLEnabled: Boolean
+    def plainSQLEnabled: Boolean = true
     /** Scala doc for GetResult mapper */
     def plainSQLDoc: Option[String] = Some(s"GetResult implicit for fetching $entityClassName objects using plain SQL queries")
     /** Name used for GetResult mapper */

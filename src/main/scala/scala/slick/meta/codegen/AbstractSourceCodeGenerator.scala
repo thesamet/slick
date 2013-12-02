@@ -24,7 +24,7 @@ abstract class AbstractSourceCodeGenerator(model: m.Model)
         } else ""
       ) +
       ( if(tables.exists(_.plainSQLEnabled)){
-          "import scala.slick.jdbc.GetResult\n" + 
+          "import scala.slick.jdbc.{GetResult => GR}\n"+
           "// NOTE: GetResult mappers for plain SQL are only generated for tables where Slick knows how to map the types of all columns.\n"
         } else ""
       ) + "\n" +
@@ -51,11 +51,10 @@ abstract class AbstractSourceCodeGenerator(model: m.Model)
     
     def entityClassCode = s"""case class ${entityClassName}(${columns.map(c=>c.name+": "+c.tpe+(c.default.map("="+_).getOrElse(""))).mkString(", ")})"""
 
-    def plainSQLSupportedTypes: Set[String] = Set("java.math.BigDecimal","Boolean","Byte","java.sql.Date","Double","Float","Int","Long","Short","String","java.sql.Time","java.sql.Timestamp")
-    def plainSQLEnabled: Boolean = columns.forall(c => plainSQLSupportedTypes.contains(c.rawType))
     def plainSQLCode = {
-      val typedColumnGetters = columns.map(c => "r.<<"+(if(c.meta.nullable)"?"else"")+s"[${c.rawType}]")
-      s"implicit def $plainSQLName = GetResult{r => " + (if(mappingEnabled)factory else"") + "(" + compound(typedColumnGetters) + ") }"
+      val typedColumnGetters = columns.map(c => "r.<<"+(if(c.meta.nullable)"?"else"")+s"["+c.rawType+"]")
+      val deps = columns.map(_.rawType).toSet.zipWithIndex.map{ case (t,i) => s"e$i: GR["+t+"]"}.mkString(", ")
+      s"implicit def $plainSQLName(implicit ${deps}) = GR{r => " + (if(mappingEnabled)factory else"") + "(" + compound(typedColumnGetters) + ") }"
     }
 
     def tableClassCode = s"""
