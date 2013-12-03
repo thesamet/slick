@@ -54,7 +54,11 @@ abstract class AbstractSourceCodeGenerator(model: m.Model)
     }
     def extractor: String = mappedType+".unapply"
     
-    def entityClassCode = s"""case class ${entityClassName}(${columns.map(c=>c.name+": "+c.tpe+(c.default.map("="+_).getOrElse(""))).mkString(", ")})"""
+    def entityClassCode = {
+      val parents = (entityClassParents.take(1).map(" extends "+_) ++ entityClassParents.drop(1).map(" with "+_)).mkString("\n")
+      val args = columns.map(c => c.name+": "+c.tpe+(c.default.map("="+_).getOrElse(""))).mkString(", ")
+      s"""case class $entityClassName($args)$parents"""
+    }
 
     def plainSQLCode = {
       val typedColumnGetters = columns.map(c => "r.<<"+(if(c.meta.nullable)"?"else"")+s"["+c.rawType+"]")
@@ -62,11 +66,15 @@ abstract class AbstractSourceCodeGenerator(model: m.Model)
       s"implicit def $plainSQLName(implicit ${deps}) = GR{r => " + (if(mappingEnabled)factory else"") + "(" + compound(typedColumnGetters) + ") }"
     }
 
-    def tableClassCode = s"""
-class ${tableClassName}(tag: Tag) extends Table[${tpe}](tag,"${meta.name.table}"){
-  ${indent(tableClassBody.filter(_.nonEmpty).map(_.mkString("\n")).mkString("\n\n"))}
+    def tableClassCode = {
+      val parents = tableClassParents.map(" with "+_).mkString("\n")
+      val body = tableClassBody.filter(_.nonEmpty).map(_.mkString("\n")).mkString("\n\n")
+      s"""
+class $tableClassName(tag: Tag) extends Table[$tpe](tag,"${meta.name.table}")$parents {
+  ${indent(body)}
 }
-    """.trim()
+      """.trim()
+    }
 
     def tableValueCode = s"""lazy val ${tableValueName} = TableQuery[${tableClassName}]"""
 

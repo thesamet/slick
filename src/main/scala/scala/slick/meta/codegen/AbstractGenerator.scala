@@ -124,6 +124,8 @@ abstract class AbstractGenerator[Code](model: m.Model)
     def entityClassName: String = entityName(meta.name.table)
     /** Generates the entity case class (holding a complete row of data of this table).*/
     def entityClassCode: Code
+    /** Traits the Table class should inherit */
+    def entityClassParents: Seq[Code] = Seq()
 
     // GetResult mapper to use with plain SQL
     /** Indicates if an implicit GetResult mapper should be generated for this table. */
@@ -151,6 +153,8 @@ abstract class AbstractGenerator[Code](model: m.Model)
       foreignKeys.map(x => docWithCode(x.doc,x.code)),
       indices    .map(x => docWithCode(x.doc,x.code))
     )
+    /** Traits the Table class should inherit */
+    def tableClassParents: Seq[Code] = Seq()
 
     // Table value (TableQuery)
     /** Scala doc for the Table/TableQuery value */
