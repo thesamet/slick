@@ -4,7 +4,7 @@ import scala.slick.meta.codegen.SourceCodeGenerator
 import scala.slick.driver._
 import scala.slick.jdbc.JdbcBackend
 import scala.slick.driver.JdbcDriver
-import scala.slick.jdbc.meta.{MTable,createMetaModel}
+import scala.slick.jdbc.meta.{MTable,createModel}
 import scala.slick.meta.Model
 
 /** Generates files for GeneratedCodeTest */
@@ -34,7 +34,7 @@ object CodeGeneratorTest {
       val db = Database.forURL(url=url,driver=jdbcDriver)
       val gen = db.withSession{ implicit session =>
         ddl.create
-        (new SourceCodeGenerator(driver.metaModel(session)))
+        (new SourceCodeGenerator(driver.model(session)))
       }
       val pkg = "scala.slick.test.meta.codegen.roundtrip"
       gen.writeToFile( "scala.slick.driver.H2Driver", args(0), pkg )
@@ -47,18 +47,18 @@ object CodeGeneratorTest {
       "CG2",
       "jdbc:hsqldb:"+testdbLocation+"hsql/supp;shutdown=true",
       HsqldbDriver, "scala.slick.driver.HsqldbDriver", "org.hsqldb.jdbcDriver",
-      config => session => new MySourceCodeGenerator(HsqldbDriver.metaModel(session),config)
+      config => session => new MySourceCodeGenerator(HsqldbDriver.model(session),config)
     ),
     Config("CG3", "jdbc:sqlite:"+testdbLocation+"sqlite/sqlite-supp.db",
       SQLiteDriver, "scala.slick.driver.SQLiteDriver", "org.sqlite.JDBC",
-      config => session => new MySourceCodeGenerator(SQLiteDriver.metaModel(session),config)
+      config => session => new MySourceCodeGenerator(SQLiteDriver.model(session),config)
     ),
     new H2Config("CG4", Seq("create-fk-1.sql")),
     new H2Config("CG5", Seq("create-fk-2.sql")),
     // CG5b tests that foreign keys to not included tables are removed
     new H2Config("CG5b", Seq("create-fk-2.sql"),
       config => session => new MySourceCodeGenerator(
-        createMetaModel(
+        createModel(
           H2Driver.getTables.list()(session).filter(_.name.name == "a"),
           H2Driver
         )(session),
@@ -67,7 +67,7 @@ object CodeGeneratorTest {
     ),
     new H2Config("CG6", Seq("create-ainc.sql")),
     new H2Config("CG7", Seq("create.sql","populate.sql"),
-      config => session => new MySourceCodeGenerator(H2Driver.metaModel(session),config){
+      config => session => new MySourceCodeGenerator(H2Driver.model(session),config){
         override def entityName = {
           case "COFFEES" => "Coff"
           case other => super.entityName(other)
@@ -80,7 +80,7 @@ object CodeGeneratorTest {
       }
     ),
     new H2Config("CG8", Seq("create-simple.sql"),
-      config => session => new MySourceCodeGenerator(H2Driver.metaModel(session),config){
+      config => session => new MySourceCodeGenerator(H2Driver.model(session),config){
         override def Table = new Table(_){
           override def entityClassEnabled = false
           override def mappingEnabled     = true
@@ -130,7 +130,7 @@ val database = Database.forURL(url=""\"$url""\",driver="$jdbcDriver",user="",pas
     objectName: String,
     inits: Seq[String],
     generator: Config => JdbcBackend#Session => SourceCodeGenerator
-      = config => session => new MySourceCodeGenerator(H2Driver.metaModel(session),config)
+      = config => session => new MySourceCodeGenerator(H2Driver.model(session),config)
   ) extends Config(
     objectName,
     "jdbc:h2:mem:test3;INIT="+inits.map("runscript from '"+testdbLocation+"h2mem/"+_+"'").mkString("\\;"),

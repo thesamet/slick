@@ -26,10 +26,10 @@ import scala.slick.{meta => m}
  * 
  * Here is an example:
  * ----------
- * import scala.slick.jdbc.meta.createMetaModel
+ * import scala.slick.jdbc.meta.createModel
  * // fetch meta model
  * val model = db.withSession{ implicit session =>
- *   createMetaModel(H2Driver.getTables.list.filter(...),H2Driver)
+ *   createModel(H2Driver.getTables.list.filter(...),H2Driver)
  * }
  * // customize code generator
  * val codegen = new SourceCodeGenerator(model){
@@ -88,7 +88,7 @@ object SourceCodeGenerator{
         driver.simple.Database
           .forURL(url, driver = jdbcDriver)
           .withSession{ implicit session =>
-            (new SourceCodeGenerator(driver.metaModel)).writeToFile(slickDriver,outputFolder,pkg)
+            (new SourceCodeGenerator(driver.model)).writeToFile(slickDriver,outputFolder,pkg)
           }
       }
       case _ => {

@@ -9,7 +9,7 @@ package object meta{
    * @param mTables tables to include in the model
    * @param profile JdbcProfile that was used to retrieve mTables (using a different one can lead to exceptions)
    */
-  def createMetaModel(mTables: Seq[MTable], profile: JdbcProfile)(implicit session: JdbcBackend#Session) : slick.meta.Model = {
+  def createModel(mTables: Seq[MTable], profile: JdbcProfile)(implicit session: JdbcBackend#Session) : slick.meta.Model = {
     import java.sql.DatabaseMetaData
     import scala.slick.{meta => m}
     import collection.immutable.ListMap

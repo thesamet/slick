@@ -10,7 +10,7 @@ import scala.slick.compiler.CompilerState
 import scala.slick.jdbc.meta.MTable
 import scala.slick.jdbc.UnitInvoker
 import scala.slick.meta.Model
-import scala.slick.jdbc.meta.createMetaModel
+import scala.slick.jdbc.meta.createModel
 
 /**
  * Slick driver for SQLite.
@@ -65,7 +65,7 @@ trait SQLiteDriver extends JdbcDriver { driver =>
 
   override def getTables: UnitInvoker[MTable] = MTable.getTables(Some(""), Some(""), None, Some(Seq("TABLE")))
 
-  override def metaModel(implicit session: Backend#Session): Model = createMetaModel(
+  override def model(implicit session: Backend#Session): Model = createModel(
     getTables.list.filter(_.name.name.toLowerCase != "sqlite_sequence" ),
     this
   )

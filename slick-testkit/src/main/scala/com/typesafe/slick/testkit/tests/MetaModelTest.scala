@@ -31,27 +31,27 @@ class MetaModelTest extends TestkitTest[JdbcTestDB] {
 
     val ddl = posts.ddl ++ categories.ddl
     ddl.create
-    tdb.profile.metaModel.assertConsistency
+    tdb.profile.model.assertConsistency
     val tables = tdb.profile.getTables.list
-    def createMetaModel(tables:Seq[MTable]): Model = meta.createMetaModel(tables,tdb.profile)
-    createMetaModel(tables).assertConsistency
+    def createModel(tables:Seq[MTable]): Model = meta.createModel(tables,tdb.profile)
+    createModel(tables).assertConsistency
     ;{
-      // checks that createMetaModel filters out foreign keys pointing out
-      val model = createMetaModel(tables.filter(_.name.name.toUpperCase=="POSTS"))
+      // checks that createModel filters out foreign keys pointing out
+      val model = createModel(tables.filter(_.name.name.toUpperCase=="POSTS"))
       model.assertConsistency
       assertEquals( 0, model.tables.map(_.foreignKeys.size).sum )
     }
-    createMetaModel(tables.filter(_.name.name.toUpperCase=="CATEGORIES")).assertConsistency
+    createModel(tables.filter(_.name.name.toUpperCase=="CATEGORIES")).assertConsistency
     try{
       // checks that assertConsistency fails when manually feeding the meta model with inconsistent meta model tables
-      Model( createMetaModel(tables).tables.filter(_.name.table.toUpperCase=="POSTS") ).assertConsistency
+      Model( createModel(tables).tables.filter(_.name.table.toUpperCase=="POSTS") ).assertConsistency
       fail("Consistency assertion should have failed")
     } catch {
       case _:AssertionError => 
     }
 
     // check that the meta model matches the table classes
-    val model = tdb.profile.metaModel
+    val model = tdb.profile.model
     assertEquals( model.tables.toString, 2, model.tables.size )
     ;{
       val categories = model.tables.filter(_.name.table.toUpperCase=="CATEGORIES").head
