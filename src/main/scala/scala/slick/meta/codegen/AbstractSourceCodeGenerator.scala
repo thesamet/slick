@@ -4,7 +4,6 @@ import scala.slick.{meta => m}
 import scala.slick.meta.ForeignKeyAction
 import scala.slick.ast.ColumnOption
 import scala.slick.SlickException
-import scala.slick.util.StringExtensions
 
 /** Base implementation for a Source code String generator */
 abstract class AbstractSourceCodeGenerator(model: m.Model)
