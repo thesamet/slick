@@ -1,7 +1,7 @@
 package com.typesafe.slick.testkit.tests
 
 import org.junit.Assert._
-import scala.slick.meta._
+import scala.slick.model._
 import scala.slick.ast.ColumnOption
 import scala.slick.jdbc.meta.MTable
 import scala.slick.jdbc.meta
@@ -43,14 +43,14 @@ class MetaModelTest extends TestkitTest[JdbcTestDB] {
     }
     createModel(tables.filter(_.name.name.toUpperCase=="CATEGORIES")).assertConsistency
     try{
-      // checks that assertConsistency fails when manually feeding the meta model with inconsistent meta model tables
+      // checks that assertConsistency fails when manually feeding the model with inconsistent tables
       Model( createModel(tables).tables.filter(_.name.table.toUpperCase=="POSTS") ).assertConsistency
       fail("Consistency assertion should have failed")
     } catch {
       case _:AssertionError => 
     }
 
-    // check that the meta model matches the table classes
+    // check that the model matches the table classes
     val model = tdb.profile.model
     assertEquals( model.tables.toString, 2, model.tables.size )
     ;{

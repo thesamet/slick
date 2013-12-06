@@ -9,7 +9,7 @@ import scala.slick.profile.{SqlDriver, SqlProfile, Capability}
 import scala.slick.SlickException
 import scala.slick.jdbc.meta.MTable
 import scala.slick.jdbc.UnitInvoker
-import scala.slick.meta.Model
+import scala.slick.model.Model
 import scala.slick.jdbc.meta.createModel
 
 /**

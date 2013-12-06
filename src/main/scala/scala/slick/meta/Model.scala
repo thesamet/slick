@@ -1,4 +1,4 @@
-package scala.slick.meta
+package scala.slick.model
 import scala.slick.ast.ColumnOption
 
 /** Qualified name of a database table */
@@ -57,9 +57,9 @@ case class Index(
 )
 
 /**
- * A container class for Slick's meta model
- * The model can have cirular dependencies (e.g. a table has a foreign key which points back to the table).
- * The circular dependencies are broken apart by using names instead of object references for back references.
+ * A container class for Slick's data model
+ * The model can have circular references (e.g. a table has a foreign key which points back to the table).
+ * The references are broken apart by using names instead of object references for back references.
  */
 case class Model(
   tables: Seq[Table]

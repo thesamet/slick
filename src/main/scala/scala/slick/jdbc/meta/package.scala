@@ -4,14 +4,14 @@ package object meta{
   import scala.slick.jdbc.JdbcBackend
   import scala.slick.ast.ColumnOption
   /**
-   * Creates a Slick meta model from jdbc meta data.
+   * Creates a Slick data model from jdbc meta data.
    * Foreign keys pointing out of the given tables are not included.
    * @param mTables tables to include in the model
    * @param profile JdbcProfile that was used to retrieve mTables (using a different one can lead to exceptions)
    */
-  def createModel(mTables: Seq[MTable], profile: JdbcProfile)(implicit session: JdbcBackend#Session) : slick.meta.Model = {
+  def createModel(mTables: Seq[MTable], profile: JdbcProfile)(implicit session: JdbcBackend#Session) : slick.model.Model = {
     import java.sql.DatabaseMetaData
-    import scala.slick.{meta => m}
+    import scala.slick.{model => m}
     import collection.immutable.ListMap
     lazy val mTablesByMQName: Map[MQName,MTable] = mTables.map(t => t.name -> t).toMap
     lazy val mPrimaryKeysByMQName: Map[MQName,Seq[MPrimaryKey]] = mTables.map(t => t.name -> t.getPrimaryKeys.list.sortBy(_.keySeq)).toMap

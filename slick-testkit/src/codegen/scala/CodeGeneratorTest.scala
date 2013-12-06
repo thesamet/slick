@@ -1,11 +1,11 @@
-package scala.slick.test.meta.codegen
+package scala.slick.test.model.codegen
 
-import scala.slick.meta.codegen.SourceCodeGenerator
+import scala.slick.model.codegen.SourceCodeGenerator
 import scala.slick.driver._
 import scala.slick.jdbc.JdbcBackend
 import scala.slick.driver.JdbcDriver
 import scala.slick.jdbc.meta.{MTable,createModel}
-import scala.slick.meta.Model
+import scala.slick.model.Model
 
 /** Generates files for GeneratedCodeTest */
 object CodeGeneratorTest {
@@ -15,13 +15,13 @@ object CodeGeneratorTest {
       import config._
       val db = slickDriverObject.simple.Database.forURL(url=url,driver=jdbcDriver,user="",password="")
       db.withSession{ implicit session =>
-        generator(config)(session).writeToFile(profile=slickDriver, folder=args(0), pkg="scala.slick.test.meta.codegen.generated", objectName, fileName=objectName+".scala" )
+        generator(config)(session).writeToFile(profile=slickDriver, folder=args(0), pkg="scala.slick.test.model.codegen.generated", objectName, fileName=objectName+".scala" )
       }
     }
     ;{
       // generates code for CodeGenRoundTripTest
       // This is generated using Derby currently because Derby strips column size of some columns,
-      // which works with all backend. If the code was generated using meta data where the size is included it would fail in derby and hsqldb.
+      // which works with all backend. If the code was generated using model data where the size is included it would fail in derby and hsqldb.
       // The code is tested using all enabled drivers. We should also diversify generation as well at some point.
       val driver = scala.slick.driver.H2Driver
       val url = "jdbc:h2:mem:test3"
@@ -36,7 +36,7 @@ object CodeGeneratorTest {
         ddl.create
         (new SourceCodeGenerator(driver.model(session)))
       }
-      val pkg = "scala.slick.test.meta.codegen.roundtrip"
+      val pkg = "scala.slick.test.model.codegen.roundtrip"
       gen.writeToFile( "scala.slick.driver.H2Driver", args(0), pkg )
     }
   }
@@ -85,17 +85,17 @@ object CodeGeneratorTest {
           override def entityClassEnabled = false
           override def mappingEnabled     = true
           override def code = {
-            if(meta.name.table == "SIMPLE_AS"){
+            if(model.name.table == "SIMPLE_AS"){
               Seq("""
-import scala.slick.test.meta.codegen.CustomTyping._
-import scala.slick.test.meta.codegen.CustomTyping
+import scala.slick.test.model.codegen.CustomTyping._
+import scala.slick.test.model.codegen.CustomTyping
 type SimpleA = CustomTyping.SimpleA
 val  SimpleA = CustomTyping.SimpleA
                 """.trim) ++ super.code
             } else super.code
           }
           override def Column = new Column(_){
-            override def rawType = meta.name match {
+            override def rawType = model.name match {
               case "A1" => "Bool"
               case _ => super.rawType
             }
@@ -104,7 +104,7 @@ val  SimpleA = CustomTyping.SimpleA
       }
     )
   )
-  class MySourceCodeGenerator(meta:Model, config: Config) extends SourceCodeGenerator(meta){
+  class MySourceCodeGenerator(model:Model, config: Config) extends SourceCodeGenerator(model){
     override def entityName = sqlName => {
       val baseName = super.entityName(sqlName)
       if(baseName.dropRight(3).last == 's') baseName.dropRight(4)

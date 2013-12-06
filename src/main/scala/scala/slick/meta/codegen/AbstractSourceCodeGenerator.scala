@@ -1,7 +1,7 @@
-package scala.slick.meta.codegen
+package scala.slick.model.codegen
 
-import scala.slick.{meta => m}
-import scala.slick.meta.ForeignKeyAction
+import scala.slick.{model => m}
+import scala.slick.model.ForeignKeyAction
 import scala.slick.ast.ColumnOption
 import scala.slick.SlickException
 
@@ -15,9 +15,9 @@ abstract class AbstractSourceCodeGenerator(model: m.Model)
 
   /** Generates code for the complete model (not wrapped in a package yet) */
   def code = {
-    "import scala.slick.meta.ForeignKeyAction" +
+    "import scala.slick.model.ForeignKeyAction" +
       "\n" +
-      ( if(tables.exists(_.meta.columns.size > 22)){
+      ( if(tables.exists(_.model.columns.size > 22)){
           "import scala.slick.collection.heterogenous._\n"+
           "import scala.slick.collection.heterogenous.syntax._\n"
         } else ""
@@ -30,8 +30,8 @@ abstract class AbstractSourceCodeGenerator(model: m.Model)
       tables.map(_.code.mkString("\n")).mkString("\n\n")
   }
 
-  // Code generators for the different meta model entities
-  abstract class TableDef(meta: m.Table) extends super.TableDef(meta){
+  // Code generators for the different model model entities
+  abstract class TableDef(model: m.Table) extends super.TableDef(model){
     // virtual class pattern
     type Column     <: ColumnDef
     type PrimaryKey <: PrimaryKeyDef
@@ -43,13 +43,13 @@ abstract class AbstractSourceCodeGenerator(model: m.Model)
     def Index     : m.Index      => Index
 
     def star = "def * = " + compound(columns.map(_.name)) + (if(mappingEnabled) s" <> (${factory}, ${extractor})" else "") // TODO: encode this check in the parent class
-    def option = "def ? = " + compound(columns.map(c => c.name+(if(c.meta.nullable)"" else ".?"))) + (if(mappingEnabled) s""".shaped.<>(${optionFactory}, (_:Any) => ???)""" /*(_ => throw new Exception("Inserting into ? projection not supported.")) : $mappedType => )) """*/ else "")
+    def option = "def ? = " + compound(columns.map(c => c.name+(if(c.model.nullable)"" else ".?"))) + (if(mappingEnabled) s""".shaped.<>(${optionFactory}, (_:Any) => ???)""" /*(_ => throw new Exception("Inserting into ? projection not supported.")) : $mappedType => )) """*/ else "")
     
     def mappedType        = entityClassName
     def factory: String   = mappedType+".tupled"
     def optionFactory: String = {
-      val discr = columns.find(c => !c.meta.nullable).get.name
-      "{case "+ compound(columns.map(c => c.name/*+": "+toOption(c.rawType)*/)) + " => " + discr +".map(_ =>" + factory + "(" + compound(columns.map(c => c.name+(if(c.meta.nullable)"" else ".get"))) + "))}"
+      val discr = columns.find(c => !c.model.nullable).get.name
+      "{case "+ compound(columns.map(c => c.name/*+": "+toOption(c.rawType)*/)) + " => " + discr +".map(_ =>" + factory + "(" + compound(columns.map(c => c.name+(if(c.model.nullable)"" else ".get"))) + "))}"
     }
     def extractor: String = mappedType+".unapply"
     
@@ -60,7 +60,7 @@ abstract class AbstractSourceCodeGenerator(model: m.Model)
     }
 
     def plainSQLCode = {
-      val typedColumnGetters = columns.map(c => "r.<<"+(if(c.meta.nullable)"?"else"")+s"["+c.rawType+"]")
+      val typedColumnGetters = columns.map(c => "r.<<"+(if(c.model.nullable)"?"else"")+s"["+c.rawType+"]")
       val deps = columns.map(_.rawType).toSet.zipWithIndex.map{ case (t,i) => s"e$i: GR["+t+"]"}.mkString(", ")
       s"implicit def $plainSQLName(implicit ${deps}) = GR{r => " + (if(mappingEnabled)factory else"") + "(" + compound(typedColumnGetters) + ") }"
     }
@@ -69,7 +69,7 @@ abstract class AbstractSourceCodeGenerator(model: m.Model)
       val parents = tableClassParents.map(" with "+_).mkString("\n")
       val body = tableClassBody.filter(_.nonEmpty).map(_.mkString("\n")).mkString("\n\n")
       s"""
-class $tableClassName(tag: Tag) extends Table[$tpe](tag,"${meta.name.table}")$parents {
+class $tableClassName(tag: Tag) extends Table[$tpe](tag,"${model.name.table}")$parents {
   ${indent(body)}
 }
       """.trim()
@@ -77,20 +77,20 @@ class $tableClassName(tag: Tag) extends Table[$tpe](tag,"${meta.name.table}")$pa
 
     def tableValueCode = s"""lazy val ${tableValueName} = TableQuery[${tableClassName}]"""
 
-    class ColumnDef(meta: m.Column) extends super.ColumnDef(meta){
+    class ColumnDef(model: m.Column) extends super.ColumnDef(model){
       def options: Iterable[String] = {
         import ColumnOption._
-        (meta.options.map{
+        (model.options.map{
           case PrimaryKey     => Some("O.PrimaryKey")
           case Default(value) => Some("O.Default("+default.get+")") // .get is safe here
           case DBType(dbType) => Some("O.DBType(\""+dbType+"\")")
           case AutoInc        => Some("O.AutoInc")
-          case NotNull|Nullable => throw new SlickException( s"[Code generation] Please don't use Nullable or NotNull column options. Use an Option type, respectively the nullable flag in Slick's meta model Column." )
+          case NotNull|Nullable => throw new SlickException( s"[Code generation] Please don't use Nullable or NotNull column options. Use an Option type, respectively the nullable flag in Slick's model model Column." )
           case o => throw new SlickException( s"[Code generation] Don't know how to render unexpected ColumnOption $o." )
         }).flatten
       }
       /** Generates literal represenation of the default value */
-      final def default: Option[String] = meta.options.collect{
+      final def default: Option[String] = model.options.collect{
         case ColumnOption.Default(value) =>
           val raw = (value match {
             case s:String => "\""+s+"\""
@@ -99,18 +99,18 @@ class $tableClassName(tag: Tag) extends Table[$tpe](tag,"${meta.name.table}")$pa
             case v:Double => v
             case _ => throw new SlickException( s"[Code generation] Dont' know how to render default value $value of ${value.getClass}" )
           }).toString
-          if(meta.nullable && raw != "None") "Some("+raw+")"
+          if(model.nullable && raw != "None") "Some("+raw+")"
           else raw
       }.headOption
 
-      def code = s"""val ${name} = column[${tpe}]("${meta.name}"${options.map(", "+_).mkString("")})"""
+      def code = s"""val ${name} = column[${tpe}]("${model.name}"${options.map(", "+_).mkString("")})"""
     }
 
-    class PrimaryKeyDef(meta: m.PrimaryKey) extends super.PrimaryKeyDef(meta){
+    class PrimaryKeyDef(model: m.PrimaryKey) extends super.PrimaryKeyDef(model){
       def code = s"""val $name = primaryKey("${dbName}", ${compound(columns.map(_.name))})"""
     }
 
-    class ForeignKeyDef(meta: m.ForeignKey) extends super.ForeignKeyDef(meta){
+    class ForeignKeyDef(model: m.ForeignKey) extends super.ForeignKeyDef(model){
       def ruleString(action: ForeignKeyAction) = action match{
         case ForeignKeyAction.Cascade    => "ForeignKeyAction.Cascade"
         case ForeignKeyAction.Restrict   => "ForeignKeyAction.Restrict"
@@ -119,13 +119,13 @@ class $tableClassName(tag: Tag) extends Table[$tpe](tag,"${meta.name.table}")$pa
         case ForeignKeyAction.SetDefault => "ForeignKeyAction.SetDefault"
       }
       
-      final def onUpdate: String = ruleString(meta.onUpdate)
-      final def onDelete: String = ruleString(meta.onDelete)
+      final def onUpdate: String = ruleString(model.onUpdate)
+      final def onDelete: String = ruleString(model.onDelete)
       def code = s"""val $name = foreignKey("${dbName}", ${compound(referencingColumns.map(_.name))}, ${referencedTable.tableValueName})(t => ${compound(referencedColumns.map(_.name).map("t."+_))}, onUpdate=${onUpdate}, onDelete=${onDelete})"""
     }
 
-    class IndexDef(meta: m.Index) extends super.IndexDef(meta){
-      def code = s"""val $name = index("${dbName}", ${compound(columns.map(_.name))}${if(meta.unique) ", unique=true" else ""})"""
+    class IndexDef(model: m.Index) extends super.IndexDef(model){
+      def code = s"""val $name = index("${dbName}", ${compound(columns.map(_.name))}${if(model.unique) ", unique=true" else ""})"""
     }
   }
   // Default Scala tree generators
@@ -151,7 +151,7 @@ class $tableClassName(tag: Tag) extends Table[$tpe](tag,"${meta.name.table}")$pa
   }
 }
 
-trait StringGeneratorHelpers extends scala.slick.meta.codegen.GeneratorHelpers[String]{
+trait StringGeneratorHelpers extends scala.slick.model.codegen.GeneratorHelpers[String]{
   def docWithCode(comment: Option[String], code:String): String = comment.map("/** "+_+" */") ++ Seq(code) mkString "\n"
   def toOption(t: String) = s"Option[$t]"
   def compound(valuesOrTypes: Seq[String]): String = {

@@ -2,7 +2,7 @@ package scala.slick.jdbc.meta
 
 import java.sql._
 import scala.slick.jdbc.{JdbcBackend, ResultSetInvoker, UnitInvoker}
-import scala.slick.meta.ForeignKeyAction
+import scala.slick.model.ForeignKeyAction
 
 /**
  * A wrapper for a row in the ResultSet returned by

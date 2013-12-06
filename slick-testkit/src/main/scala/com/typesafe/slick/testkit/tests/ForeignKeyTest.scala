@@ -1,7 +1,7 @@
 package com.typesafe.slick.testkit.tests
 
 import org.junit.Assert._
-import scala.slick.meta.ForeignKeyAction
+import scala.slick.model.ForeignKeyAction
 import scala.slick.lifted.{Tag, TableQuery}
 import com.typesafe.slick.testkit.util.{RelationalTestDB, TestkitTest}
 

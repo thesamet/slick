@@ -1,6 +1,6 @@
-package scala.slick.meta.codegen
+package scala.slick.model.codegen
 
-import scala.slick.{meta => m}
+import scala.slick.{model => m}
 import scala.slick.lifted.ForeignKeyAction
 import scala.slick.ast.ColumnOption
 
@@ -25,7 +25,7 @@ abstract class AbstractGenerator[Code](model: m.Model)
   /** Table code generators. */
   final lazy val tables: Seq[Table] = model.tables.map(Table)
   /** Table code generators indexed by db table name. */
-  final lazy val tablesByName: Map[m.QualifiedName,Table] = tables.map(t => t.meta.name -> t).toMap
+  final lazy val tablesByName: Map[m.QualifiedName,Table] = tables.map(t => t.model.name -> t).toMap
 
   // pulled out here to make this common use case simpler
   /** Maps database table name to Table class and value name */
@@ -34,12 +34,12 @@ abstract class AbstractGenerator[Code](model: m.Model)
   def entityName = (dbName: String) => dbName.toCamelCase+"Row"
 
   // -----------------------------------------------------
-  // Code generators for the different meta model entities
+  // Code generators for the different model model entities
   /**
    * Code generator for table related code
-   * @param meta Jdbc meta data
+   * @param model corresponding Slick meta model component
   */
-  abstract case class TableDef(val meta: m.Table){
+  abstract case class TableDef(val model: m.Table){
     _table =>
     // virtual class pattern
     /** Column code generator */
@@ -61,15 +61,15 @@ abstract class AbstractGenerator[Code](model: m.Model)
 
     // component generators
     /** Column code generators. */
-    final lazy val columns: Seq[Column] = meta.columns.map(Column)
+    final lazy val columns: Seq[Column] = model.columns.map(Column)
     /** Column code generators indexed by db column name */
-    final lazy val columnsByName: Map[String,Column] = columns.map(c => c.meta.name -> c).toMap
+    final lazy val columnsByName: Map[String,Column] = columns.map(c => c.model.name -> c).toMap
     /** Primary key code generator, if this table has one */
-    final lazy val primaryKey: Option[PrimaryKey] = meta.primaryKey.map(PrimaryKey)
+    final lazy val primaryKey: Option[PrimaryKey] = model.primaryKey.map(PrimaryKey)
     /** Foreign key code generators */
-    final lazy val foreignKeys: Seq[ForeignKey] = meta.foreignKeys.map(ForeignKey)
+    final lazy val foreignKeys: Seq[ForeignKey] = model.foreignKeys.map(ForeignKey)
     /** Index code generators */
-    final lazy val indices: Seq[Index] = meta.indices.map(Index)
+    final lazy val indices: Seq[Index] = model.indices.map(Index)
 
     /** Generates the complete code for this table and its subordinate generators. */
     def code: Seq[Code] = {
@@ -94,7 +94,7 @@ abstract class AbstractGenerator[Code](model: m.Model)
     /** The * projection that accumulates all columns and map them if mappingEnabled is true*/
     def star: Code
     /** Indicates weather a ? projection should be generated. */
-    def optionEnabled: Boolean = mappingEnabled && columns.exists(c => !c.meta.nullable)
+    def optionEnabled: Boolean = mappingEnabled && columns.exists(c => !c.model.nullable)
     /** The ? projection to produce an Option row. Useful for outer joins. */
     def option: Code
     /** Type of the * projection in case it mappingEnabled is false. */
@@ -120,7 +120,7 @@ abstract class AbstractGenerator[Code](model: m.Model)
     /** Scala doc for entity case class */
     def entityClassDoc: Option[String] = Some(s"Entity class storing rows of table $tableValueName")
     /** Name used for entity case class */
-    def entityClassName: String = entityName(meta.name.table)
+    def entityClassName: String = entityName(model.name.table)
     /** Generates the entity case class (holding a complete row of data of this table).*/
     def entityClassCode: Code
     /** Traits the Table class should inherit */
@@ -132,15 +132,15 @@ abstract class AbstractGenerator[Code](model: m.Model)
     /** Scala doc for GetResult mapper */
     def plainSQLDoc: Option[String] = Some(s"GetResult implicit for fetching $entityClassName objects using plain SQL queries")
     /** Name used for GetResult mapper */
-    def plainSQLName: String = "Get"+tableName(meta.name.table)
+    def plainSQLName: String = "Get"+tableName(model.name.table)
     /** Generates the GetResult mapper definition code.*/
     def plainSQLCode: Code
 
     // Table class
     /** Scala doc for the Table class */
-    def tableClassDoc: Option[String] = Some(s"Table description of table ${meta.name.table}. Objects of this class serves as prototypes for rows in queries.")
+    def tableClassDoc: Option[String] = Some(s"Table description of table ${model.name.table}. Objects of this class serves as prototypes for rows in queries.")
     /** Name for the Table class */
-    def tableClassName: String = tableName(meta.name.table)
+    def tableClassName: String = tableName(model.name.table)
     /** Generates the Table class code. */
     def tableClassCode: Code
     /** Generates the body of the Table class as individual statements grouped into logical groups. */
@@ -159,16 +159,16 @@ abstract class AbstractGenerator[Code](model: m.Model)
     /** Scala doc for the Table/TableQuery value */
     def tableValueDoc: Option[String] = Some(s"Collection-like TableQuery object for table $tableValueName")
     /** Name used for the Table/TableQuery value */
-    def tableValueName: String = tableName(meta.name.table)
+    def tableValueName: String = tableName(model.name.table)
     /** Generates the definition of the Table/TableQuery value (a collection-like value representing this database table). */
     def tableValueCode: Code
 
     // generator classes
     /**
      * Code generator for column related code.
-     * @param meta Jdbc meta data
+     * @param model corresponding Slick meta model component
      */
-    abstract case class ColumnDef(val meta: m.Column){
+    abstract case class ColumnDef(val model: m.Column){
       /** Table code generator */
       final lazy val table = _table
       /**
@@ -177,18 +177,18 @@ abstract class AbstractGenerator[Code](model: m.Model)
        * Override tpe for taking control of Option.wrapping.
        * Override GeneratorHelpers#sqlTypeToClass for generic adjustments.
        */
-      def rawType: Code = mapJdbcType(meta.jdbcType)
+      def rawType: Code = mapJdbcType(model.jdbcType)
       /** Possibly Option-wrapped Scala type of this column. @see rawType */
-      final def tpe: Code = if(meta.nullable) toOption(rawType) else rawType
+      final def tpe: Code = if(model.nullable) toOption(rawType) else rawType
 
       /** Generates code for the ColumnOptions (DBType, AutoInc, etc.) */
       def options: Iterable[Code]
 
       /** Name for the column definition used in Scala code */
-      def name: String = meta.name.toCamelCase.uncapitalize
+      def name: String = model.name.toCamelCase.uncapitalize
       /** Scala doc comment for the column definition */
       def doc: Option[String] = Some({
-        s"""Database column ${meta.name} ${meta.options.map(_.toString).mkString(", ")}"""
+        s"""Database column ${model.name} ${model.options.map(_.toString).mkString(", ")}"""
       })
       /** Scala code defining the column */
       def code: Code
@@ -197,15 +197,15 @@ abstract class AbstractGenerator[Code](model: m.Model)
     /**
      * Code generator for primary key related code.
      * (Currently only used for composite primary keys.)
-     * @param meta Jdbc meta data
+     * @param model corresponding Slick meta model component
      */
-    abstract case class PrimaryKeyDef(val meta: m.PrimaryKey){
+    abstract case class PrimaryKeyDef(val model: m.PrimaryKey){
       /** Table code generator */
       final lazy val table = _table
       /** Columns code generators in correct order */
-      final lazy val columns: Seq[Column] = meta.columns.map(_.name).map(columnsByName)
+      final lazy val columns: Seq[Column] = model.columns.map(_.name).map(columnsByName)
       /** Name used in the db or a default */
-      lazy val dbName = meta.name.getOrElse("PRIMARY_KEY_"+freshInteger)
+      lazy val dbName = model.name.getOrElse("PRIMARY_KEY_"+freshInteger)
       /** Name for the primary key definition used in Scala code */
       def name = dbName.toCamelCase.uncapitalize
       /** Scala doc comment for the definition */
@@ -216,23 +216,23 @@ abstract class AbstractGenerator[Code](model: m.Model)
 
     /**
      * Code generator for foreign key related code.
-     * @param meta Jdbc meta data
+     * @param model corresponding Slick meta model component
      */
-    abstract case class ForeignKeyDef(val meta: m.ForeignKey){
+    abstract case class ForeignKeyDef(val model: m.ForeignKey){
       /** Referencing Table code generator */
       final lazy val referencingTable = _table
       /** Referencing columns code generators */
-      final lazy val referencingColumns: Seq[Column] = meta.referencingColumns.map(_.name).map(columnsByName)
+      final lazy val referencingColumns: Seq[Column] = model.referencingColumns.map(_.name).map(columnsByName)
       /** Referenced Table code generator */
-      final lazy val referencedTable: Table = tablesByName(meta.referencedTable)
+      final lazy val referencedTable: Table = tablesByName(model.referencedTable)
       /** Referenced Columns code generators */
-      final lazy val referencedColumns: Seq[TableDef#Column] = meta.referencedColumns.map(_.name).map(referencedTable.columnsByName)
+      final lazy val referencedColumns: Seq[TableDef#Column] = model.referencedColumns.map(_.name).map(referencedTable.columnsByName)
       /** Generates the ForeignKeyAction code for the ON UPDATE behavior rule. */
       def onUpdate: Code
       /** Generates the ForeignKeyAction code for the ON Delete behavior rule. */
       def onDelete: Code
       /** Name used in the db or a default */
-      lazy val dbName = meta.name.getOrElse("PRIMARY_KEY_"+freshInteger)
+      lazy val dbName = model.name.getOrElse("PRIMARY_KEY_"+freshInteger)
       /** Name for the foreign key definition used in Scala code. (Default: if no name conflict, name of referenced table, else database name.) */
       def name: String = {
         val preferredName = referencedTable.tableValueName.uncapitalize
@@ -247,27 +247,27 @@ abstract class AbstractGenerator[Code](model: m.Model)
           preferredName
       }
       /** Scala doc comment for the definition */
-      def doc: Option[String] = Some(s"Foreign key ${meta.name} referencing ${referencedTable.tableValueName}")
+      def doc: Option[String] = Some(s"Foreign key ${model.name} referencing ${referencedTable.tableValueName}")
       /** Scala code defining this foreign key */
       def code: Code
     }
 
     /**
      * Code generator for index related code
-     * @param meta Jdbc meta data
+     * @param model corresponding Slick meta model component
      */
-    abstract case class IndexDef(val meta: m.Index){
+    abstract case class IndexDef(val model: m.Index){
       /** Table code generator */
       final lazy val table = _table
       /** Columns code generators */
-      final lazy val columns: Seq[Column] = meta.columns.map(_.name).map(columnsByName)
+      final lazy val columns: Seq[Column] = model.columns.map(_.name).map(columnsByName)
       /** Name used in the db or a default */
-      lazy val dbName = meta.name.getOrElse("INDEX_"+freshInteger)
+      lazy val dbName = model.name.getOrElse("INDEX_"+freshInteger)
       /** The name used in Scala code */
-      def name = meta.name.map("INDEX_"+_).getOrElse(dbName).toCamelCase.uncapitalize
+      def name = model.name.map("INDEX_"+_).getOrElse(dbName).toCamelCase.uncapitalize
       /** Name for the index definition used in Scala code */
       def doc: Option[String] = Some(
-        (if(meta.unique)"Uniqueness " else "")+
+        (if(model.unique)"Uniqueness " else "")+
         s"""Index over ${columns.map(_.name).mkString("(",",",")")}"""
       )
       /** Scala code defining this index */

@@ -1,4 +1,4 @@
-package scala.slick.meta.codegen
+package scala.slick.model.codegen
 import java.io.File
 import java.io.BufferedWriter
 import java.io.FileWriter

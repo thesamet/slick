@@ -1,6 +1,6 @@
-package scala.slick.meta.codegen
+package scala.slick.model.codegen
 
-import scala.slick.{meta => m}
+import scala.slick.{model => m}
 
 /**
  * A customizable code generator for working with Slick.
@@ -20,14 +20,14 @@ import scala.slick.{meta => m}
  * subclasses. The final methods are logically bound to the model, which can
  * be modified before handing it to the code generator.
  *
- * Within the classes the relevant part of the Slick meta model can
+ * Within the classes the relevant part of the Slick data model can
  * be accessed to drive the code generation. (In some cases it may be usedful
- * to fetch additional meta data from jdbc.)
+ * to fetch additional model data from jdbc.)
  * 
  * Here is an example:
  * ----------
- * import scala.slick.jdbc.meta.createModel
- * // fetch meta model
+ * import scala.slick.jdbc.model.createModel
+ * // fetch data model
  * val model = db.withSession{ implicit session =>
  *   createModel(H2Driver.getTables.list.filter(...),H2Driver)
  * }
@@ -47,8 +47,8 @@ import scala.slick.{meta => m}
  *
  *     // override contained column generator
  *     override def Column = new Column(_){
- *       // use the meta data (a member) of this column to change the Scala type, e.g. to a custom enum or anything else
- *       override def rawType = if(meta.name == "SOME_SPECIAL_COLUMN_NAME") "MyCustomType" else super.rawType
+ *       // use the data model member of this column to change the Scala type, e.g. to a custom enum or anything else
+ *       override def rawType = if(model.name == "SOME_SPECIAL_COLUMN_NAME") "MyCustomType" else super.rawType
  *
  *     }
  *   }
@@ -58,14 +58,14 @@ import scala.slick.{meta => m}
  *
  * Of coures it makes sense to integrate this into your build process.
  *
- * @param meta Slick meta model for which code should be generated.
+ * @param model Slick data model for which code should be generated.
  */
 class SourceCodeGenerator(model: m.Model)
                    extends AbstractSourceCodeGenerator(model) with OutputHelpers{
   // "Tying the knot": making virtual class concrete
   type Table = TableDef
   def Table = new TableDef(_)
-  class TableDef(meta: m.Table) extends super.TableDef(meta)
+  class TableDef(model: m.Table) extends super.TableDef(model)
                                 with DefaultColumn
                                 with DefaultPrimaryKey
                                 with DefaultForeignKey
