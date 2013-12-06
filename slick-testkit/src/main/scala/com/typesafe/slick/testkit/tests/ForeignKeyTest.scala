@@ -55,6 +55,12 @@ class ForeignKeyTest extends TestkitTest[RelationalTestDB] {
     println("Manual join")
     assertEquals(List((2,1), (3,2), (4,3), (5,2)), q1.map(p => (p._1, p._2)).run)
 
+    val q1a = (for {
+      p <- posts
+      c <- categories.where(_.name === p.title).take(1)
+    } yield (p.id, c.id, c.name, p.title)).sortBy(_._1)
+    q1a.run
+
     val q2 = (for {
       p <- posts
       c <- p.categoryFK
